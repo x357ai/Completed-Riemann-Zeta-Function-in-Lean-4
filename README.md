@@ -10,7 +10,7 @@ Machine-checked Lean 4 formalization of explicit zero-free bounds and transverse
 
 ## Verified Theorems (Zero `sorryAx`)
 
-All theorems below compile cleanly under `lake build` and depend strictly on Lean's three standard axioms (`[propext, Classical.choice, Quot.sound]`):
+All theorems compile cleanly under `lake build` and depend strictly on `[propext, Classical.choice, Quot.sound]`:
 
 1. **Critical-Strip Zero-Free Box (`MyMathProject.lean`):**
    `Guevremont.riemannZeta_ne_zero_on_criticalStripBox_five` proves $\zeta(s) \neq 0$ for all $s \in (0, 1) + i[-5, 5]$.
