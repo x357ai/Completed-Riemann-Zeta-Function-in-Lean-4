@@ -1,0 +1,145 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{Machine-Checked Local Zero-Free Bounds and Transverse Seam Coupling\\
+for the Completed Riemann Zeta Function in Lean 4}
+\author{Barry Lee Guevremont\\
+\small Independent Researcher, X357-AI, Goldsboro, North Carolina\\
+\small \texttt{https://github.com/x357ai/Completed-Riemann-Zeta-Function-in-Lean-4}}
+\date{November 22, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a machine-checked Lean 4 formalization (built against Mathlib \texttt{v4.33.1}) establishing explicit zero-free lower bounds and local transverse off-axis zero exclusion for the completed Riemann zeta function $\xi(s)$ and the classical Riemann zeta function $\zeta(s)$. By folding the Mellin integral of the Jacobi theta kernel over $(0,1)$ and $(1,\infty)$, we formally prove that $|\Lambda_0(s)| \le \frac{2}{57}$ throughout the vertical strip $-1 \le \operatorname{Re}(s) \le 2$. Combining this uniform tail bound with polynomial norm estimates yields $|\xi(s)| \ge \frac{2}{5}$ on $[3/5, 4/5] + i[9/10, 11/10]$, $|\xi(s)| \ge \frac{1}{19}$ on $[0, 1] + i[-5, 5]$, and hence $\zeta(s) \neq 0$ throughout the open critical-strip box $(0,1) + i[-5,5]$. In a companion module (\texttt{SeamCoupling.lean}), we formalize the Schwarz--functional-equation mirror identity $\xi(1-\bar{s}) = \overline{\xi(s)}$, derive the Cauchy--Riemann orthogonal gradient transfer along $\operatorname{Re}(s) = \frac{1}{2}$, and prove local off-axis zero exclusion around every point $t_0 \in \mathbb{R}$ where $\frac{d}{dt}\operatorname{Re}\xi(\frac{1}{2}+it)\big|_{t=t_0} \neq 0$. All theorems compile with zero \texttt{sorryAx}, depend strictly on Lean's three standard axioms (\texttt{propext}, \texttt{Classical.choice}, \texttt{Quot.sound}), and pass independent cloud CI verification. This work certifies local analytic properties and does not claim a global proof of the Riemann Hypothesis.
+\end{abstract}
+
+\section{Introduction and Epistemic Scope}
+
+Let $\zeta(s)$ denote the Riemann zeta function and let
+\[
+\xi(s) = \frac{1}{2} + \frac{s(s-1)}{2}\Lambda_0(s)
+\]
+denote the completed Riemann zeta function, where $\Lambda_0(s)$ is Mathlib's \texttt{completedRiemannZeta$_0$}. For $s \in \mathbb{C} \setminus \{0,1\}$, $\xi(s) = \frac{1}{2}s(s-1)\pi^{-s/2}\Gamma(s/2)\zeta(s)$, so within the open critical strip $0 < \operatorname{Re}(s) < 1$ the zeros of $\xi(s)$ coincide exactly with the nontrivial zeros of $\zeta(s)$.
+
+This paper documents the formalization track of an independent research program initiated in March 2025 (originally motivated by geometric and quaternionic mirror-symmetry models of the critical line) and formally certified in Lean 4 in November 2026. To maintain strict mathematical clarity, we separate verified results from open problems:
+\begin{itemize}
+    \item \textbf{Formally Certified (Track B, Lean 4 / Mathlib):} Explicit uniform bounds on $|\Lambda_0(s)|$, explicit positive lower bounds on $|\xi(s)|$ on compact rectangles, $\zeta(s) \neq 0$ on $(0,1) + i[-5,5]$, the mirror law $\xi(1-\bar{s}) = \overline{\xi(s)}$, orthogonal gradient transfer along $\sigma = \frac{1}{2}$, and local off-axis zero exclusion around any critical-line point with nonvanishing vertical derivative.
+    \item \textbf{Independently Checked Numerically (Track A, Arb):} Rigorous ball-arithmetic verification of $|\xi(s)|$ on compact regions in \texttt{certify\_xi\_arb.c}.
+    \item \textbf{Explicitly Out of Scope:} Global exclusion of off-axis zeros for arbitrary height $t \to \infty$ (the full Riemann Hypothesis). Local bounds and functional-equation reflection symmetry alone cannot rule out off-axis zeros globally without arithmetic input from the Euler product.
+\end{itemize}
+
+\section{Uniform Mellin Folding and Critical-Strip Zero-Free Bounds}
+
+All results in this section are formalized in \texttt{XiRectangleBound.lean} under namespace \texttt{Guevremont.XiRectangleBound}.
+
+\begin{lemma}[\texttt{exp\_neg\_pi\_le\_one\_div\_twenty}]
+$e^{-\pi} \le \frac{1}{20}$.
+\end{lemma}
+\begin{proof}[Proof outline]
+From Mathlib's bounds $\pi > 3$ (\texttt{Real.pi\_gt\_three}) and $e > 2.718$ (\texttt{Real.exp\_one\_gt\_d9}), we obtain $e^{\pi} \ge e^3 > 2.718^3 > 20$, giving $e^{-\pi} \le \frac{1}{20}$.
+\end{proof}
+
+\begin{theorem}[\texttt{norm\_completedRiemannZeta$_0$\_le\_two\_div\_57}]
+For every $s \in \mathbb{C}$ satisfying $-1 \le \operatorname{Re}(s) \le 2$,
+\[
+|\Lambda_0(s)| \le \frac{2}{57}.
+\]
+\end{theorem}
+\begin{proof}[Proof outline]
+Using Mathlib's functional-equation pair $P = \texttt{HurwitzZeta.hurwitzEvenFEPair 0}$, we split $\Lambda_0(s) = \frac{1}{2}P.\Lambda_0(s/2)$ into Mellin integrals over $(0,1)$ and $(1,\infty)$. Via the inversion change of variables $x \mapsto x^{-1}$ (\texttt{mellin\_comp\_inv}) and the functional equation for the modified theta kernel, the $(0,1)$ integral folds onto $(1,\infty)$ with exponent $(1-s)/2 - 1$. On $-1 \le \operatorname{Re}(s) \le 2$, both $\operatorname{Re}(s/2 - 1) \le 0$ and $\operatorname{Re}((1-s)/2 - 1) \le 0$, so $x^{\operatorname{Re}(\cdot)} \le 1$ for $x > 1$. Applying the Jacobi theta tail bound $|\vartheta(ix) - 1| \le \frac{2}{1 - e^{-\pi x}} e^{-\pi x} \le \frac{40}{19} e^{-\pi x}$ for $x \ge 1$ and integrating $\int_1^\infty e^{-\pi x}\,dx = e^{-\pi}/\pi$ yields
+\[
+|\Lambda_0(s)| \le \frac{40}{19}\cdot\frac{e^{-\pi}}{\pi} \le \frac{40}{19}\cdot\frac{1}{20}\cdot\frac{1}{3} = \frac{2}{57}. \qedhere
+\]
+\end{proof}
+
+\begin{theorem}[\texttt{riemannXi\_ge\_two\_fifths\_on\_targetRect} and \texttt{riemannXi\_ge\_one\_div\_19\_on\_criticalStripBox\_five}]
+\leavevmode
+\begin{enumerate}
+    \item For all $s \in [3/5, 4/5] + i[9/10, 11/10]$, $|\xi(s)| \ge \frac{2}{5}$.
+    \item For all $s \in [0, 1] + i[-5, 5]$, $|\xi(s)| \ge \frac{1}{19}$, and in particular $\xi(s) \neq 0$.
+\end{enumerate}
+\end{theorem}
+\begin{proof}[Proof outline]
+For $s = \sigma + it$ with $0 \le \sigma \le 1$ and $|t| \le 5$, the algebraic identity
+\[
+|s(s-1)|^2 = \bigl(\sigma(1-\sigma)\bigr)^2 + t^2\bigl(\sigma^2 + (1-\sigma)^2\bigr) + t^4
+\]
+gives $|s(s-1)|^2 \le \frac{1}{16} + 25 + 625 < (51/2)^2$, hence $|s(s-1)/2| \le \frac{51}{4}$. By the reverse triangle inequality and Theorem 2.2,
+\[
+|\xi(s)| \ge \frac{1}{2} - \left|\frac{s(s-1)}{2}\right|\,|\Lambda_0(s)| \ge \frac{1}{2} - \frac{51}{4}\cdot\frac{2}{57} = \frac{1}{19}.
+\]
+The target rectangle bound follows analogously from $|s(s-1)/2| \le \frac{4}{5}$.
+\end{proof}
+
+\section{Mirror Symmetry and Transverse Seam Coupling}
+
+All results in this section are formalized in \texttt{SeamCoupling.lean} under namespace \texttt{Guevremont.SeamCoupling}. Write $\mathrm{critPt}(t) = \frac{1}{2} + it$ and $\mathrm{horizPt}(t_0, \sigma) = \sigma + it_0$.
+
+\begin{theorem}[\texttt{riemannXi\_mirror}]
+For all $s \in \mathbb{C}$, $\xi(1 - \bar{s}) = \overline{\xi(s)}$.
+\end{theorem}
+\begin{proof}[Proof outline]
+For $\operatorname{Re}(s) > 1$, conjugation invariance of $\zeta(s)$ and $\Gamma_{\mathbb{R}}(s)$ is proved directly from the Dirichlet series and Mathlib's \texttt{Complex.Gamma\_conj}. Analytic continuation on $\mathbb{C}$ via the identity theorem (\texttt{AnalyticOnNhd.eqOn\_of\_preconnected\_of\_eventuallyEq}) extends $\xi(\bar{s}) = \overline{\xi(s)}$ to all $s \in \mathbb{C}$, which combines with $\xi(1-s) = \xi(s)$ to give the mirror law.
+\end{proof}
+
+\begin{theorem}[\texttt{riemannXi\_orthogonal\_gradient\_transfer}]
+For every $t_0 \in \mathbb{R}$, along the horizontal slice $\sigma \mapsto \xi(\sigma + it_0)$ at $\sigma = \frac{1}{2}$,
+\[
+\left.\frac{\partial}{\partial \sigma}\operatorname{Re}\xi(\sigma + it_0)\right|_{\sigma = 1/2} = 0,
+\qquad
+\left.\frac{\partial}{\partial \sigma}\operatorname{Im}\xi(\sigma + it_0)\right|_{\sigma = 1/2} = -\left.\frac{d}{dt}\operatorname{Re}\xi\!\left(\tfrac{1}{2} + it\right)\right|_{t = t_0}.
+\]
+\end{theorem}
+
+\begin{theorem}[\texttt{riemannZeta\_local\_off\_axis\_zero\_exclusion}]
+For any $t_0 \in \mathbb{R}$ such that $\frac{d}{dt}\operatorname{Re}\xi(\frac{1}{2}+it)\big|_{t=t_0} \neq 0$, there exists $\delta > 0$ such that for every $\sigma \in (0,1)$ with $\sigma \neq \frac{1}{2}$ and $|\sigma - \frac{1}{2}| < \delta$, $\zeta(\sigma + it_0) \neq 0$.
+\end{theorem}
+
+\section{Combined Critical-Strip Zero-Free Theorem}
+
+Combining \texttt{SeamCoupling.riemannXi\_eq\_zero\_iff\_riemannZeta\_eq\_zero} with \texttt{XiRectangleBound.riemannXi\_ne\_zero\_on\_criticalStripBox\_five} in \texttt{MyMathProject.lean} yields our headline theorem directly on Mathlib's \texttt{riemannZeta}:
+
+\begin{theorem}[\texttt{Guevremont.riemannZeta\_ne\_zero\_on\_criticalStripBox\_five}]
+For all $s \in \mathbb{C}$ with $0 < \operatorname{Re}(s) < 1$ and $|\operatorname{Im}(s)| \le 5$, $\zeta(s) \neq 0$.
+\end{theorem}
+
+\section{Verification Audit and Reproducibility}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Module} & \textbf{Key Formalized Theorem} & \textbf{Axioms} \\
+\midrule
+\texttt{MyMathProject.lean} & \texttt{riemannZeta\_ne\_zero\_on\_criticalStripBox\_five} & Standard 3 only \\
+\texttt{XiRectangleBound.lean} & \texttt{norm\_completedRiemannZeta$_0$\_le\_two\_div\_57} & Standard 3 only \\
+\texttt{XiRectangleBound.lean} & \texttt{riemannXi\_ge\_one\_div\_19\_on\_criticalStripBox\_five} & Standard 3 only \\
+\texttt{XiRectangleBound.lean} & \texttt{riemannXi\_ge\_two\_fifths\_on\_targetRect} & Standard 3 only \\
+\texttt{SeamCoupling.lean} & \texttt{riemannXi\_orthogonal\_gradient\_transfer} & Standard 3 only \\
+\texttt{SeamCoupling.lean} & \texttt{riemannZeta\_local\_off\_axis\_zero\_exclusion} & Standard 3 only \\
+\bottomrule
+\end{tabular}
+\caption{Axiom audit via \texttt{\#print axioms}. ``Standard 3 only'' denotes \texttt{[propext, Classical.choice, Quot.sound]} with zero \texttt{sorryAx}.}
+\end{table}
+
+\begin{remark}[Build and CI Verification]
+The repository pins Lean 4 \texttt{v4.33.1} and Mathlib \texttt{v4.33.1}. Local compilation via \texttt{lake build} completes 3,154 build jobs with zero warnings and zero errors. Independent cloud verification on GitHub Actions (\texttt{leanprover/lean-action@v1}, run \texttt{45019123883}) passes cleanly in 1m28s. Independent ball-arithmetic checks are provided in \texttt{certify\_xi\_arb.c}.
+\end{remark}
+
+\section{Limitations and Future Work}
+
+The box height $T = 5$ in Theorem 4.1 reflects the crossover where $\frac{1}{2}|s(s-1)| \cdot \frac{2}{57}$ approaches $\frac{1}{2}$; pushing the Lean 4 zero-free box closer to the first nontrivial zero at $t_1 \approx 14.1347$ requires replacing the single uniform bound on $|\Lambda_0(s)|$ with a sharper oscillatory or subdivided interval estimate. Extending local transverse exclusion to a global statement would require proving simplicity and nonvanishing properties across the entire critical strip, which lies beyond local functional-equation symmetry alone.
+
+\end{document}

@@ -1,3 +1,6 @@
 /.lake
 .lake/
 certify_xi_arb
+paper/*.aux
+paper/*.log
+paper/*.out
