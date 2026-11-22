@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you reference this formalization, please cite it as below."
+title: "Completed Riemann Zeta Function in Lean 4: Local Zero-Free Bounds and Transverse Seam Coupling"
+authors:
+  - family-names: "Guevremont"
+    given-names: "Barry Lee"
+    affiliation: "X357-AI, Goldsboro, North Carolina"
+version: "2.0.0"
+date-released: "2026-11-22"
+repository-code: "https://github.com/x357ai/Completed-Riemann-Zeta-Function-in-Lean-4"
