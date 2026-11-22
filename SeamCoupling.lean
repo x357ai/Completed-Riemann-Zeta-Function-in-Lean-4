@@ -152,7 +152,7 @@ lemma nat_cpow_conj (n : ℕ) {s : ℂ} (hs : s ≠ 0) :
     rw [Complex.cpow_def_of_ne_zero hn0, Complex.cpow_def_of_ne_zero hn0, ← Complex.exp_conj]
     congr 1
     have hlog : Complex.log (n : ℂ) = ((Real.log n : ℝ) : ℂ) := by
-      simpa using (Complex.ofReal_log (Nat.cast_nonneg n)).symm
+      rw [← Complex.ofReal_natCast, Complex.ofReal_log (Nat.cast_nonneg n)]
     rw [map_mul, hlog, Complex.conj_ofReal]
 
 lemma riemannZeta_conj_of_one_lt_re {s : ℂ} (hs : 1 < s.re) :
@@ -211,7 +211,8 @@ lemma hasDerivAt_conj_conj {f : ℂ → ℂ} {z f' : ℂ}
   simp only [Function.comp_apply, smul_eq_mul]
   have hnorm : ‖starRingEnd ℂ w - starRingEnd ℂ z‖ = ‖w - z‖ := by
     rw [← map_sub, Complex.norm_conj]
-  have hnorm2 : ‖f (starRingEnd ℂ w) - f (starRingEnd ℂ z) - (starRingEnd ℂ w - starRingEnd ℂ z) * f'‖ =
+  have hnorm2 :
+      ‖f (starRingEnd ℂ w) - f (starRingEnd ℂ z) - (starRingEnd ℂ w - starRingEnd ℂ z) * f'‖ =
       ‖starRingEnd ℂ (f (starRingEnd ℂ w)) - starRingEnd ℂ (f (starRingEnd ℂ z)) -
         (w - z) * starRingEnd ℂ f'‖ := by
     rw [← Complex.norm_conj]
