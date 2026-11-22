@@ -1,0 +1,11 @@
+Verification time: 2026-11-22T15:43:22Z
+96fe7724e528add0d4bb95d05a6a14ccec4fb6b7
+fb1ea2c704ff45e06d570f01b79b6043f84675718285db7448ef42907632b454  certify_xi_arb.c
+libflint-dev	3.4.0-1
+libgmp-dev:amd64	2:6.3.0+dfsg-5ubuntu2
+libmpfr-dev:amd64	4.2.2-3
+Grid: 64x64 (4096 sub-boxes covering R = [3/5,4/5] x [9/10,11/10])
+Working precision: 128 bits
+Boxes: 4096 certified, 0 finite but not certified, 0 invalid.
+Enclosure of min |xi(s)| on R (midpoint +/- radius): [0.5 +/- 0.0858]
+Certified |xi(s)| > 2/5 for ALL s in R: TRUE (VERIFIED)
