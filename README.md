@@ -30,6 +30,32 @@ All theorems compile cleanly under `lake build` and depend strictly on `[propext
     lake exe cache get
     lake build
 
+The published project pins Lean `v4.33.1` and Mathlib `v4.33.1`; the exact Mathlib commit is recorded in `lake-manifest.json`. To display the theorem-level axiom reports explicitly, run:
+
+```bash
+lake env lean SeamCoupling.lean
+lake env lean XiRectangleBound.lean
+lake env lean MyMathProject.lean
+```
+
+The source at commit `4329cab81b9c67514dc52fe7099da22eac92c1cc` has a successful [GitHub Actions build](https://github.com/x357ai/Completed-Riemann-Zeta-Function-in-Lean-4/actions/runs/45019477968). This records a build using the repository's pinned environment; it does not report a separate independent-kernel replay.
+
+## Reproduce the Arb Certificate
+
+Use a C compiler and a FLINT installation providing `flint/acb_dirichlet.h`, together with the required GMP and MPFR development libraries. With those libraries available on the compiler's standard search paths:
+
+```bash
+cc -O2 -std=c11 -Wall -Wextra certify_xi_arb.c \
+  -o certify_xi_arb -lflint -lmpfr -lgmp
+./certify_xi_arb
+```
+
+The program evaluates **4,096 whole complex boxes**, rather than only their centers, at 128-bit working precision. The input balls enclose rational grid cells whose union is `[3/5, 4/5] + i[9/10, 11/10]`; endpoint rounding is enclosed by the balls. Every box must pass the rigorous comparison against `2/5`.
+
+Exit status `0` means all boxes certified the strict lower bound. Exit status `1` and `NOT CERTIFIED` mean at least one evaluation was invalid or insufficiently sharp; this is not by itself a counterexample to the mathematical bound. The reported minimum is an **interval enclosure**, not an exact minimum or a lower bound given by its midpoint.
+
+For a reproducible numerical record, retain the source commit, compiler and FLINT versions, complete output, and exit status from the actual run. The C certificate is separate from the Lean proof; `lake build` does not run this C program.
+
 ## Key Files
 
 * `MyMathProject.lean` — Top-level entry point proving `riemannZeta s ≠ 0` on $(0, 1) + i[-5, 5]$.
@@ -37,3 +63,13 @@ All theorems compile cleanly under `lake build` and depend strictly on `[propext
 * `SeamCoupling.lean` — Mirror law, orthogonal gradient transfer, and local off-axis zero exclusion.
 * `certify_xi_arb.c` — Independent Arb ball-arithmetic verification source.
 * `CITATION.cff` — Citation metadata.
+
+## Licensing
+
+Copyright 2026 Barry Lee Guevremont, for original copyrightable contributions.
+
+* Original Lean and C source code, build configuration, and software code snippets are licensed under the **Apache License 2.0**; see [`LICENSE`](LICENSE).
+* The manuscript's LaTeX source and PDF, original figures, this README, and other original explanatory documentation are licensed under **Creative Commons Attribution 4.0 International (CC BY 4.0)**, excluding software code snippets covered above; see [`paper/LICENSE`](paper/LICENSE) and the [license summary](https://creativecommons.org/licenses/by/4.0/).
+* Third-party material and dependencies retain their own licenses and applicable notices. These grants apply only to rights held by the author.
+
+The licenses apply to the identified materials separately. Both permit commercial reuse subject to their respective terms. Attribution and citation details are provided in [`CITATION.cff`](CITATION.cff).
